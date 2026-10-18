@@ -1,10 +1,10 @@
-import {cloudConfig} from './cloud-config.js?v=2.2.1';
-import {JournalSync} from './cloud-sync.js?v=2.2.1';
-import {validateData,createInitialData} from './core.js?v=2.2.1';
-import {accountCandidate} from './cloud-bootstrap.js?v=2.2.1';
+import {cloudConfig} from './cloud-config.js?v=2.3.0';
+import {JournalSync} from './cloud-sync.js?v=2.3.0';
+import {validateData,createInitialData} from './core.js?v=2.3.0';
+import {accountCandidate} from './cloud-bootstrap.js?v=2.3.0';
 
 export function createCloud({getData,onData,onGuest,onStatus,blocked=()=>false,canInitialize=()=>true}){
-  let client=null,engine=null,user=null,debounce=null,initializing=true;
+  let client=null,engine=null,user=null,debounce=null,initializing=true,batchStarted=0,retryTimer=null;
   const configured=Boolean(cloudConfig.url&&cloudConfig.publishableKey);
   const state={configured,user:null,linked:false,status:configured?'loading':'unconfigured',error:null,syncedAt:null};
   const notify=()=>onStatus({...state});
@@ -60,10 +60,10 @@ export function createCloud({getData,onData,onGuest,onStatus,blocked=()=>false,c
       const {data,error}=await client.auth.getSession();if(error)throw error;attach(data.session?.user||null);
     }catch(error){state.status='error';state.error=friendlyError(error);notify();}
   }
-  async function sync(){if(!engine?.state||!navigator.onLine||(blocked()&&!engine.state.dirty))return;await engine.sync();}
+  async function sync(force=false){if(!engine?.state||!navigator.onLine||(blocked()&&!engine.state.dirty))return;const current=engine;await current.sync({force:force===true});clearTimeout(retryTimer);if(engine===current&&current.status==='error')retryTimer=setTimeout(sync,Math.max(1000,current.retryAt-Date.now()));if(engine===current&&current.state?.dirty&&current.status==='pending'){clearTimeout(debounce);debounce=setTimeout(sync,2000);}}
   function saveLocal(payload){
     if(!engine?.state)return false;
-    engine.saveLocal(payload);clearTimeout(debounce);debounce=setTimeout(sync,1000);return true;
+    const before=engine.state.payload;engine.saveLocal(payload);if(before===engine.state.payload)return true;const time=Date.now();if(!batchStarted)batchStarted=time;clearTimeout(debounce);debounce=setTimeout(()=>{batchStarted=0;sync();},Math.min(2000,Math.max(0,10000-(time-batchStarted))));return true;
   }
   async function auth(mode,email,password){
     if(!client)throw Error('Облако ещё не настроено.');
@@ -101,16 +101,16 @@ export function createCloud({getData,onData,onGuest,onStatus,blocked=()=>false,c
       localEnglishSessions:getData().english.sessions.length,remoteEnglishSessions:other?.english?.sessions?.length||0,
       remoteSessions:other?.sessions?.length,remoteMeasurements:other?.measurements?.length};
   }
-  const poll=setInterval(sync,30000);
+  const poll=setInterval(sync,300000);
   window.addEventListener('online',()=>{update();sync();});window.addEventListener('offline',update);
   window.addEventListener('focus',()=>setTimeout(sync,800));
   document.addEventListener('visibilitychange',sync);
   window.addEventListener('pagehide',()=>{if(engine?.state?.dirty)sync();});
   // Another tab may have advanced the same local cache. Pause instead of overwriting it.
-  window.addEventListener('storage',event=>{if(engine?.state&&event.key===engine.key){engine.conflict={externalTab:true};engine.emit('conflict');}});
+  window.addEventListener('storage',event=>{if(engine?.state&&event.key===engine.key){engine.receiveExternal(event.newValue);}});
   return {state,init,saveLocal,sync,auth,signOut,connect,resolve,password,getBackup,conflictInfo,rawCache,resetCache,
     hasPending:()=>Boolean(engine?.state?.dirty),isLinked:()=>Boolean(engine?.state),
-    stop:()=>{clearInterval(poll);clearTimeout(debounce);}};
+    stop:()=>{clearInterval(poll);clearTimeout(debounce);clearTimeout(retryTimer);}};
 }
 
 export function isPublicKey(key){

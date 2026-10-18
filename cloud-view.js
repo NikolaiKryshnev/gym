@@ -14,7 +14,7 @@ export function cloudView(state,mode='signin'){
     }else{
       content+=`<p class="muted small mb"><b>Автосохранение включено.</b> Тренировки, подходы, программы, замеры, планы, английский и настройки сохраняются после изменений. На другом устройстве достаточно войти в тот же аккаунт. Без сети изменения ждут отправки.</p>`;
       if(state.status==='conflict')content+=`<div class="notice mb">На устройстве и в облаке есть разные записи. Один раз выбери нужную версию — затем автосохранение продолжится.<div class="mt">${button('conflict','Сравнить версии','primary')}</div></div>`;
-      content+=`<div class="cloud-detail" data-cloud-detail>${state.syncedAt?'Последняя синхронизация: '+esc(new Date(state.syncedAt).toLocaleString('ru-RU')):'Первое сохранение ожидает связи.'}</div><div class="cloud-choices mt">${['error','offline'].includes(state.status)?button('sync','Повторить сейчас'):''}${button('backup','Копия до замены')}</div>`;
+      content+=`<div class="cloud-detail" data-cloud-detail>${state.syncedAt?'Последняя синхронизация: '+esc(new Date(state.syncedAt).toLocaleString('ru-RU')):'Первое сохранение ожидает связи.'}</div><p class="small muted mt">Локальный кэш включён. Изменения отправляются автоматически; обновления с других устройств проверяем раз в 5 минут, когда приложение открыто. Можно обновить сразу.</p><div class="cloud-choices mt">${button('sync',['error','offline'].includes(state.status)?'Повторить сейчас':'Обновить из облака')}${button('backup','Копия до замены')}</div>`;
     }
     if(state.error)content+=`<p class="cloud-error" role="status">${esc(state.error)}</p>`;
     return title+content+`<div class="mt">${button('logout','Выйти из аккаунта')}</div>`;

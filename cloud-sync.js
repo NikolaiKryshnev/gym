@@ -1,10 +1,11 @@
 // Offline-first journal synchronization. All writes use an atomic revision check.
+import {personalJournal,hasPersonalJournal,sameJournal} from './cloud-bootstrap.js?v=2.2.1';
 export class JournalSync {
   constructor({remote,storage,key,validate,onData=()=>{},onChange=()=>{},onBackup=()=>{}}) {
     Object.assign(this,{remote,storage,key,validate,onData,onChange,onBackup});
     this.state=null;this.conflict=null;this.status='unlinked';this.lastError=null;this.inFlight=null;
     try {const cached=JSON.parse(storage.getItem(key)||'null');if(cached){
-      if(!Number.isSafeInteger(cached.revision)||cached.revision<0||typeof cached.dirty!=='boolean')throw Error('Invalid cache');
+      if(!Number.isSafeInteger(cached.revision)||cached.revision<0||typeof cached.dirty!=='boolean'||(cached.bootstrap!==undefined&&typeof cached.bootstrap!=='boolean'))throw Error('Invalid cache');
       this.state={...cached,payload:validate(cached.payload)};
     }} catch(error) {this.lastError=error;this.status='cache-error';}
   }
@@ -14,6 +15,12 @@ export class JournalSync {
     this.storage.setItem(this.key,JSON.stringify(next));this.state=next;
   }
   restore(){if(this.state){this.onData(structuredClone(this.state.payload));this.emit(this.state.dirty?'pending':'saved');return true;}return false;}
+  initialize(payload){
+    if(this.state||this.status==='cache-error')return false;
+    const valid=this.validate(personalJournal(payload));
+    this.write({payload:valid,revision:0,dirty:true,syncedAt:null,bootstrap:true});
+    this.onData(structuredClone(valid));this.emit('pending');return true;
+  }
   saveLocal(payload){
     if(!this.state)return false;
     const valid=this.validate(payload);
@@ -51,6 +58,15 @@ export class JournalSync {
     try{
       const start=this.state,row=await this.remote.read();
       if(row&&(!Number.isSafeInteger(row.revision)||row.revision<1))throw Error('Некорректная версия облачного дневника.');
+      if(start.bootstrap){
+        if(row){
+          const valid=this.validate(row.payload),local=this.state.payload;
+          if(hasPersonalJournal(local)&&!sameJournal(local,valid)){this.conflict=row;this.emit('conflict');return;}
+          this.onBackup(local);this.write({payload:valid,revision:row.revision,dirty:false,syncedAt:row.updated_at});
+          this.onData(structuredClone(valid));this.emit('saved');return;
+        }
+        this.write({...this.state,bootstrap:false});
+      }
       if((row?.revision||0)!==start.revision){
         if(this.state.dirty||!row){this.conflict=row||{revision:0,payload:null};this.emit('conflict');return;}
         const valid=this.validate(row.payload);
@@ -93,7 +109,7 @@ export class JournalSync {
     }else if(choice==='local'){
       // Read again: a second edit on another device must still be detected by CAS.
       const row=await this.remote.read();if(row)this.onBackup(row.payload);
-      this.write({...this.state,revision:row?.revision||0,dirty:true});this.conflict=null;
+      this.write({...this.state,revision:row?.revision||0,dirty:true,bootstrap:false});this.conflict=null;
       await this.sync();
     }
   }

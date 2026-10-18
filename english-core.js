@@ -1,5 +1,5 @@
-import {LESSONS} from './lessons.js?v=2.2.0';
-import {validatePlanProgress} from './lesson-plan.js?v=2.2.0';
+import {LESSONS} from './lessons.js?v=2.2.1';
+import {validatePlanProgress} from './lesson-plan.js?v=2.2.1';
 export {LESSONS};
 export const PHRASES=LESSONS.flatMap(lesson=>lesson.groups.flatMap(group=>group.items.map(item=>({...item,lessonId:lesson.id,groupId:group.id,groupTitle:group.title}))));
 export const PHRASE_MAP=new Map(PHRASES.map(p=>[p.id,p]));

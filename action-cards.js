@@ -1,4 +1,4 @@
-import {PHRASES,normalizeAnswer} from './english-core.js?v=2.2.0';
+import {PHRASES,normalizeAnswer} from './english-core.js?v=2.2.1';
 const esc=v=>String(v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const hash=value=>{let h=[...value].reduce((h,c)=>Math.imul(h^c.charCodeAt(0),16777619)>>>0,2166136261);h=Math.imul(h^(h>>>16),2246822507);return (h^(h>>>13))>>>0;};
 export function choiceOptions(phrase,seed='',limit=4){

@@ -1,8 +1,9 @@
-import {cloudConfig} from './cloud-config.js?v=2.2.0';
-import {JournalSync} from './cloud-sync.js';
-import {validateData} from './core.js?v=2.2.0';
+import {cloudConfig} from './cloud-config.js?v=2.2.1';
+import {JournalSync} from './cloud-sync.js?v=2.2.1';
+import {validateData,createInitialData} from './core.js?v=2.2.1';
+import {accountCandidate} from './cloud-bootstrap.js?v=2.2.1';
 
-export function createCloud({getData,onData,onGuest,onStatus,blocked=()=>false}){
+export function createCloud({getData,onData,onGuest,onStatus,blocked=()=>false,canInitialize=()=>true}){
   let client=null,engine=null,user=null,debounce=null,initializing=true;
   const configured=Boolean(cloudConfig.url&&cloudConfig.publishableKey);
   const state={configured,user:null,linked:false,status:configured?'loading':'unconfigured',error:null,syncedAt:null};
@@ -30,7 +31,21 @@ export function createCloud({getData,onData,onGuest,onStatus,blocked=()=>false})
       validate:validateData,onData:payload=>{if(engine===nextEngine)onData(payload);},
       onChange:()=>{if(engine===nextEngine)update();},onBackup:payload=>backupFor(nextEngine.key,payload)});
     engine=nextEngine;
-    if(!engine.restore()&&hadUser)onGuest();update();if(engine.state)sync();
+    const restored=engine.restore();
+    if(restored)try{
+      const ownerKey=`forma.cloud.${new URL(cloudConfig.url).hostname}.legacy-owner`;
+      if(!localStorage.getItem(ownerKey))localStorage.setItem(ownerKey,identity);
+    }catch(error){engine.lastError=error;engine.emit('error');}
+    if(!restored){
+      if(hadUser)onGuest();
+      if(engine.status!=='cache-error')try{
+        if(!canInitialize())throw Error('Сначала восстанови локальную копию дневника в настройках.');
+        const ownerKey=`forma.cloud.${new URL(cloudConfig.url).hostname}.legacy-owner`,owner=localStorage.getItem(ownerKey);
+        if(!owner)localStorage.setItem(ownerKey,identity);
+        engine.initialize(accountCandidate(getData(),owner,identity));
+      }catch(error){engine.lastError=error;engine.emit('error');}
+    }
+    update();if(engine.state)sync();
   }
   async function init(){
     if(!configured){notify();return;}
@@ -45,10 +60,10 @@ export function createCloud({getData,onData,onGuest,onStatus,blocked=()=>false})
       const {data,error}=await client.auth.getSession();if(error)throw error;attach(data.session?.user||null);
     }catch(error){state.status='error';state.error=friendlyError(error);notify();}
   }
-  async function sync(){if(!engine?.state||blocked()||!navigator.onLine)return;await engine.sync();}
+  async function sync(){if(!engine?.state||!navigator.onLine||(blocked()&&!engine.state.dirty))return;await engine.sync();}
   function saveLocal(payload){
     if(!engine?.state)return false;
-    engine.saveLocal(payload);clearTimeout(debounce);debounce=setTimeout(sync,1800);return true;
+    engine.saveLocal(payload);clearTimeout(debounce);debounce=setTimeout(sync,1000);return true;
   }
   async function auth(mode,email,password){
     if(!client)throw Error('Облако ещё не настроено.');
@@ -59,7 +74,7 @@ export function createCloud({getData,onData,onGuest,onStatus,blocked=()=>false})
     else result=await client.auth.signInWithPassword({email,password});
     if(result.error)throw Error(friendlyError(result.error));
     if(result.data?.session)attach(result.data.session.user);
-    return mode==='signup'&&!result.data?.session?'Проверь почту: для входа может потребоваться подтверждение адреса.':mode==='reset'?'Если адрес зарегистрирован, на него придёт письмо для смены пароля.':'Вход выполнен. Выбери дневник для синхронизации.';
+    return mode==='signup'&&!result.data?.session?'Проверь почту: для входа может потребоваться подтверждение адреса.':mode==='reset'?'Если адрес зарегистрирован, на него придёт письмо для смены пароля.':'Вход выполнен. Подключаем твой дневник.';
   }
   async function signOut(){
     const {error}=await client.auth.signOut({scope:'local'});if(error)throw Error(friendlyError(error));attach(null);
@@ -77,6 +92,7 @@ export function createCloud({getData,onData,onGuest,onStatus,blocked=()=>false})
     if(!engine||engine.status!=='cache-error')return;
     const raw=rawCache();if(raw)localStorage.setItem(engine.key+'.recovery',raw);
     localStorage.removeItem(engine.key);engine.lastError=null;engine.emit('unlinked');
+    engine.initialize(createInitialData(false));sync();
   }
   function conflictInfo(){
     let other=engine?.conflict?.payload;
@@ -88,7 +104,8 @@ export function createCloud({getData,onData,onGuest,onStatus,blocked=()=>false})
   const poll=setInterval(sync,30000);
   window.addEventListener('online',()=>{update();sync();});window.addEventListener('offline',update);
   window.addEventListener('focus',()=>setTimeout(sync,800));
-  document.addEventListener('visibilitychange',()=>{if(!document.hidden)sync();});
+  document.addEventListener('visibilitychange',sync);
+  window.addEventListener('pagehide',()=>{if(engine?.state?.dirty)sync();});
   // Another tab may have advanced the same local cache. Pause instead of overwriting it.
   window.addEventListener('storage',event=>{if(engine?.state&&event.key===engine.key){engine.conflict={externalTab:true};engine.emit('conflict');}});
   return {state,init,saveLocal,sync,auth,signOut,connect,resolve,password,getBackup,conflictInfo,rawCache,resetCache,

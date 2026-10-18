@@ -1,5 +1,5 @@
-import {STUDY_MODES,studySeconds} from './english-core.js?v=2.2.0';
-import {actionCard,actionArt} from './action-cards.js?v=2.2.0';
+import {STUDY_MODES,studySeconds} from './english-core.js?v=2.2.1';
+import {actionCard,actionArt} from './action-cards.js?v=2.2.1';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const button=(action,text,style='outline',attrs='')=>`<button type="button" class="btn ${style}" data-action="eng-${action}" ${attrs}>${text}</button>`;
 const clock=s=>`${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;

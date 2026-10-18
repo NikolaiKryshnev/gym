@@ -1,5 +1,5 @@
-import {createEnglishData,validateEnglishData} from './english-core.js?v=2.2.0';
-import {prepareWorkingSets} from './progression.js?v=2.2.0';
+import {createEnglishData,validateEnglishData} from './english-core.js?v=2.2.1';
+import {prepareWorkingSets} from './progression.js?v=2.2.1';
 export const STORAGE_KEY = 'forma.training.v1';
 export const uid = () => globalThis.crypto?.randomUUID?.() || 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2);
 export const dateKey = (date = new Date()) => { const d = new Date(date); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };

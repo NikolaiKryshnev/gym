@@ -1,4 +1,4 @@
-import {LESSON_PLANS,planStep,planStats} from './lesson-plan.js?v=2.2.0';
+import {LESSON_PLANS,planStep,planStats} from './lesson-plan.js?v=2.2.1';
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const sourceLink=source=>`<a href="https://www.youtube.com/watch?v=${source.videoId}&t=${source.seconds}s" target="_blank" rel="noopener noreferrer">${esc(source.label)} ↗</a>`;
 export function lessonPlanView(lesson,english){

@@ -1,4 +1,4 @@
-import {createEnglishData,validateEnglishData} from './english-core.js?v=2.0.0';
+import {createEnglishData,validateEnglishData} from './english-core.js?v=2.1.0';
 export const STORAGE_KEY = 'forma.training.v1';
 export const uid = () => globalThis.crypto?.randomUUID?.() || 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2);
 export const dateKey = (date = new Date()) => { const d = new Date(date); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -20,6 +20,7 @@ export const programSetCount = program => program.exercises.reduce((sum,item)=>s
 export function migrateData(input){
   const result=structuredClone(input);
   if(result.english===undefined)result.english=createEnglishData();
+  else if(result.english.plans===undefined)result.english.plans={};
   if(result.programSetScheme!==1){
     for(const program of result.programs)for(const item of program.exercises){item.warmupSets=2;item.sets=3;}
     result.programSetScheme=1;

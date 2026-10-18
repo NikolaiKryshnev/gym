@@ -1,6 +1,6 @@
-import {cloudConfig} from './cloud-config.js?v=2.0.0';
+import {cloudConfig} from './cloud-config.js?v=2.1.0';
 import {JournalSync} from './cloud-sync.js';
-import {validateData} from './core.js?v=2.0.0';
+import {validateData} from './core.js?v=2.1.0';
 
 export function createCloud({getData,onData,onGuest,onStatus,blocked=()=>false}){
   let client=null,engine=null,user=null,debounce=null,initializing=true;

@@ -1,11 +1,12 @@
-import {LESSONS} from './lessons.js?v=2.0.0';
+import {LESSONS} from './lessons.js?v=2.1.0';
+import {validatePlanProgress} from './lesson-plan.js?v=2.1.0';
 export {LESSONS};
 export const PHRASES=LESSONS.flatMap(lesson=>lesson.groups.flatMap(group=>group.items.map(item=>({...item,lessonId:lesson.id,groupId:group.id,groupTitle:group.title}))));
 export const PHRASE_MAP=new Map(PHRASES.map(p=>[p.id,p]));
 export const STUDY_MODES={act:'Слушай и делай',cards:'Вспомни фразу',translate:'Напиши по-английски',listen:'На слух'};
 const newId=()=>globalThis.crypto?.randomUUID?.()||'eng-'+Date.now()+'-'+Math.random().toString(36).slice(2);
 export const studyDate=(time=Date.now())=>{const d=new Date(time);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
-export function createEnglishData(){return {version:1,settings:{dailyGoal:10,rate:.85,pause:4,accent:'en-US'},cards:{},sessions:[],active:null};}
+export function createEnglishData(){return {version:1,settings:{dailyGoal:10,rate:.85,pause:4,accent:'en-US'},cards:{},sessions:[],active:null,plans:{}};}
 export function normalizeAnswer(value){
   return String(value).toLowerCase().replace(/[‘’]/g,"'").replace(/\bdon't\b/g,'do not').replace(/\bcan't\b/g,'cannot').replace(/\bit's\b/g,'it is').replace(/\bthat's\b/g,'that is').replace(/[^a-z0-9\s]/g,' ').replace(/\s+/g,' ').trim();
 }
@@ -63,5 +64,6 @@ export function validateEnglishData(value){
   const sessionIds=new Set();
   for(const row of value.sessions){if(!object(row)||!id(row.id)||sessionIds.has(row.id)||!(row.lessonId===null||id(row.lessonId))||!Object.hasOwn(STUDY_MODES,row.mode)||!date(row.date)||!number(row.startedAt,0,9e15)||!number(row.finishedAt,row.startedAt,9e15)||!number(row.duration,0,9e12)||typeof row.completed!=='boolean'||!results(row.results))fail();sessionIds.add(row.id);}
   if(value.active!==null){const a=value.active;if(!object(a)||!id(a.id)||sessionIds.has(a.id)||!(a.lessonId===null||id(a.lessonId))||!Object.hasOwn(STUDY_MODES,a.mode)||!Array.isArray(a.queue)||!a.queue.length||a.queue.length>500||!a.queue.every(id)||!Number.isInteger(a.index)||!number(a.index,0,a.queue.length-1)||!results(a.results)||a.results.length!==a.index||a.results.some((r,i)=>r.id!==a.queue[i])||!number(a.startedAt,0,9e15)||!number(a.resumedAt,a.startedAt,9e15)||!number(a.elapsedMs,0,9e12)||typeof a.paused!=='boolean')fail();}
-  return structuredClone(value);
+  if(value.plans!==undefined)validatePlanProgress(value.plans);
+  return {...structuredClone(value),plans:structuredClone(value.plans||{})};
 }

@@ -1,5 +1,5 @@
-import {cloudView,cloudLabel} from './cloud-view.js?v=2.0.0';
-import {englishStats} from './english-core.js?v=2.0.0';
+import {cloudView,cloudLabel} from './cloud-view.js?v=2.1.0';
+import {englishStats} from './english-core.js?v=2.1.0';
 const esc=value=>String(value??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 export function accessScreen(state){if(state.recovery)return 'recovery';if(!state.user)return state.status==='loading'?'loading':'auth';return 'app';}
 const brand=()=>`<a class="portal-brand" href="#hub"><img src="./icon.svg" alt="">FORMA<span>Личное пространство</span></a>`;

@@ -1,6 +1,6 @@
-const CACHE='forma-v7-lesson-plans';
+const CACHE='forma-v8-progression-practice';
 const AUDIO_CACHE='forma-lesson-audio-v1';
-const ASSETS=['./','./index.html','./styles.css?v=2.1.0','./portal.css?v=2.1.0','./lesson-plan.css?v=2.1.0','./lesson-plan.js?v=2.1.0','./lesson-plan-view.js?v=2.1.0','./app.js?v=2.1.0','./core.js?v=2.1.0','./cloud.js?v=2.1.0','./cloud-config.js?v=2.1.0','./cloud-sync.js','./cloud-view.js?v=2.1.0','./english-core.js?v=2.1.0','./english-ui.js?v=2.1.0','./lessons.js?v=2.1.0','./audio-manifest.js?v=2.1.0','./portal-view.js?v=2.1.0','./vendor/supabase.js','./icon.svg','./icon-192.png','./icon-512.png','./manifest.webmanifest'];
+const ASSETS=['./training-update.css?v=2.2.0','./progression.js?v=2.2.0','./action-cards.js?v=2.2.0','./practice-view.js?v=2.2.0','./','./index.html','./styles.css?v=2.2.0','./portal.css?v=2.2.0','./lesson-plan.css?v=2.2.0','./lesson-plan.js?v=2.2.0','./lesson-plan-view.js?v=2.2.0','./app.js?v=2.2.0','./core.js?v=2.2.0','./cloud.js?v=2.2.0','./cloud-config.js?v=2.2.0','./cloud-sync.js','./cloud-view.js?v=2.2.0','./english-core.js?v=2.2.0','./english-ui.js?v=2.2.0','./lessons.js?v=2.2.0','./audio-manifest.js?v=2.2.0','./portal-view.js?v=2.2.0','./vendor/supabase.js','./icon.svg','./icon-192.png','./icon-512.png','./manifest.webmanifest'];
 self.addEventListener('install',event=>event.waitUntil(caches.open(CACHE).then(cache=>cache.addAll(ASSETS)).then(()=>self.skipWaiting())));
 self.addEventListener('activate',event=>event.waitUntil(caches.keys().then(keys=>Promise.all(keys.filter(key=>key.startsWith('forma-')&&key!==CACHE&&key!==AUDIO_CACHE).map(key=>caches.delete(key)))).then(()=>self.clients.claim())));
 async function audioResponse(request){

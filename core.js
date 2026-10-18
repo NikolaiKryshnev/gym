@@ -1,4 +1,5 @@
-import {createEnglishData,validateEnglishData} from './english-core.js?v=2.1.0';
+import {createEnglishData,validateEnglishData} from './english-core.js?v=2.2.0';
+import {prepareWorkingSets} from './progression.js?v=2.2.0';
 export const STORAGE_KEY = 'forma.training.v1';
 export const uid = () => globalThis.crypto?.randomUUID?.() || 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2);
 export const dateKey = (date = new Date()) => { const d = new Date(date); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -25,6 +26,7 @@ export function migrateData(input){
     for(const program of result.programs)for(const item of program.exercises){item.warmupSets=2;item.sets=3;}
     result.programSetScheme=1;
   }
+  for(const program of result.programs)for(const item of program.exercises)if(item.progression===undefined)item.progression={enabled:true,increment:2.5};
   return result;
 }
 export function createExerciseSets(item,previous){
@@ -33,7 +35,7 @@ export function createExerciseSets(item,previous){
   const make=(type,count,old,fallbackWeight)=>Array.from({length:count},(_,index)=>({id:uid(),weight:old[index]?.weight??fallbackWeight,reps:old[index]?.reps??item.reps??10,done:false,type}));
   return [...make('warmup',item.warmupSets??2,warmups,0),...make('work',item.sets??3,working,item.weight??0)];
 }
-const template = (id,name,focus,color,items) => ({id,name,focus,color,rest:90,exercises:items.map(([exerciseId,sets,reps,weight])=>({exerciseId,warmupSets:2,sets:3,reps,weight}))});
+const template = (id,name,focus,color,items) => ({id,name,focus,color,rest:90,exercises:items.map(([exerciseId,sets,reps,weight])=>({exerciseId,warmupSets:2,sets:3,reps,weight,progression:{enabled:true,increment:2.5}}))});
 export const DEFAULT_PROGRAMS = [
   template('upper','Верх тела','Грудь · спина · плечи','purple',[['bench',3,10,60],['pulldown',3,12,45],['incline',3,10,20],['cable-row',3,12,40],['lateral',3,15,8],['triceps',3,12,20]]),
   template('lower','Ноги и ягодицы','Квадрицепс · бицепс бедра','orange',[['squat',4,8,60],['rdl',3,10,50],['legpress',3,12,100],['legcurl',3,12,30],['calf',3,15,40]]),
@@ -61,8 +63,8 @@ export function createInitialData(demo = true, now = new Date()) {
 export function createSession(program, data, now = Date.now()) {
   return {id:uid(),name:program?.name || 'Свободная тренировка',programId:program?.id || null,date:dateKey(new Date(now)),startedAt:now,pausedMs:0,pausedAt:null,note:'',effort:7,exercises:(program?.exercises || []).map(item=>{
     const exercise = data.exercises.find(e=>e.id===item.exerciseId);
-    const previous = [...data.sessions].sort((a,b)=>b.startedAt-a.startedAt).flatMap(s=>s.exercises).find(e=>e.exerciseId===item.exerciseId);
-    return {id:uid(),exerciseId:item.exerciseId,name:exercise?.name || 'Упражнение',rest:program.rest??data.settings.rest,sets:createExerciseSets(item,previous)};
+    const previous = [...data.sessions].filter(s=>s.startedAt<now).sort((a,b)=>b.startedAt-a.startedAt).flatMap(s=>s.exercises).find(e=>e.exerciseId===item.exerciseId&&e.sets.some(x=>x.done&&x.type==='work'));
+    return {id:uid(),exerciseId:item.exerciseId,name:exercise?.name || 'Упражнение',rest:program.rest??data.settings.rest,...prepareWorkingSets(item,previous,createExerciseSets(item,previous))};
   })};
 }
 export function stats(data, days = 28, now = new Date()) {
@@ -98,11 +100,16 @@ export function validateData(input) {
   for(const e of input.exercises){if(!text(e.id,100)||!e.id||ids.has(e.id)||!text(e.name,100)||!e.name||!text(e.muscle,50)||!text(e.equipment,50))fail();ids.add(e.id);}
   const programIds=new Set();
   for(const p of input.programs){if(!text(p.id,100)||programIds.has(p.id)||!text(p.name,100)||!text(p.focus)||!['purple','orange','green'].includes(p.color)||!validateNumber(p.rest,0,3600)||!Array.isArray(p.exercises)||p.exercises.length>50)fail();programIds.add(p.id);for(const e of p.exercises)if(!ids.has(e.exerciseId)||!Number.isInteger(e.sets)||!validateNumber(e.sets,1,30)||(e.warmupSets!==undefined&&(!Number.isInteger(e.warmupSets)||!validateNumber(e.warmupSets,0,20)))||!validateNumber(e.reps,1,1000)||!validateNumber(e.weight,0,2000))fail();}
+  for(const p of input.programs)for(const e of p.exercises)if(e.progression!==undefined&&(!e.progression||typeof e.progression.enabled!=='boolean'||!validateNumber(e.progression.increment,.01,100)))fail();
   const validateSession=(s,active=false)=>{
     if(!text(s.id,100)||!text(s.name,100)||!validDate(s.date)||!validateNumber(s.startedAt,0,9e15)||!text(s.note,3000)||!validateNumber(s.effort,1,10)||!Array.isArray(s.exercises)||s.exercises.length>50)fail();
     if(active){if(!validateNumber(s.pausedMs,0,9e15)||(s.pausedAt!==null&&!validateNumber(s.pausedAt,s.startedAt,9e15)))fail();}else if(!validateNumber(s.duration,0,9e12)||!validateNumber(s.finishedAt,s.startedAt,9e15))fail();
     for(const e of s.exercises){if(!text(e.id,100)||!ids.has(e.exerciseId)||!text(e.name,100)||!validateNumber(e.rest,0,3600)||!Array.isArray(e.sets)||e.sets.length>50)fail();for(const set of e.sets)if(!text(set.id,100)||!validateNumber(set.weight,0,2000)||!validateNumber(set.reps,1,1000)||typeof set.done!=='boolean'||!['work','warmup','drop','failure'].includes(set.type))fail();}
   };
+  for(const s of [...input.sessions,...input.active?[input.active]:[]])for(const e of s.exercises){
+    if(e.workTarget!==undefined){const t=e.workTarget;if(!t||!Number.isInteger(t.sets)||!validateNumber(t.sets,1,30)||!validateNumber(t.reps,1,1000)||!Array.isArray(t.weights)||t.weights.length!==t.sets||!t.weights.every(w=>validateNumber(w,0,2000))||(t.baseWeight!==undefined&&!validateNumber(t.baseWeight,0,2000)))fail();}
+    if(e.weightIncrease!==undefined&&!validateNumber(e.weightIncrease,0,100))fail();
+  }
   const sessionIds=new Set();for(const s of input.sessions){validateSession(s);if(sessionIds.has(s.id))fail();sessionIds.add(s.id);}
   if(input.active!==null){if(!input.active||sessionIds.has(input.active.id))fail();validateSession(input.active,true);}
   for(const m of input.measurements){if(!text(m.id,100)||!validDate(m.date)||!text(m.note,1000))fail();for(const field of ['weight','waist','chest','hip'])if(m[field]!==null&&!validateNumber(m[field],0,1000))fail();}

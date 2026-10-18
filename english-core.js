@@ -1,9 +1,9 @@
-import {LESSONS} from './lessons.js?v=2.1.0';
-import {validatePlanProgress} from './lesson-plan.js?v=2.1.0';
+import {LESSONS} from './lessons.js?v=2.2.0';
+import {validatePlanProgress} from './lesson-plan.js?v=2.2.0';
 export {LESSONS};
 export const PHRASES=LESSONS.flatMap(lesson=>lesson.groups.flatMap(group=>group.items.map(item=>({...item,lessonId:lesson.id,groupId:group.id,groupTitle:group.title}))));
 export const PHRASE_MAP=new Map(PHRASES.map(p=>[p.id,p]));
-export const STUDY_MODES={act:'Слушай и делай',cards:'Вспомни фразу',translate:'Напиши по-английски',listen:'На слух'};
+export const STUDY_MODES={act:'Слушай и делай',cards:'Вспомни фразу',translate:'Напиши по-английски',listen:'На слух',actions:'Карточки действий',dictation:'Аудио → напиши текст',choice:'Аудио → выбери действие',variants:'Выбери английскую фразу'};
 const newId=()=>globalThis.crypto?.randomUUID?.()||'eng-'+Date.now()+'-'+Math.random().toString(36).slice(2);
 export const studyDate=(time=Date.now())=>{const d=new Date(time);return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;};
 export function createEnglishData(){return {version:1,settings:{dailyGoal:10,rate:.85,pause:4,accent:'en-US'},cards:{},sessions:[],active:null,plans:{}};}

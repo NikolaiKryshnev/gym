@@ -1,5 +1,5 @@
-const CACHE = 'forma-v2-warmup';
-const ASSETS = ['./', './index.html', './styles.css', './app.js', './core.js', './icon.svg', './icon-192.png', './icon-512.png', './manifest.webmanifest'];
+const CACHE = 'forma-v3-cloud';
+const ASSETS = ['./', './index.html', './styles.css', './app.js', './core.js', './cloud.js', './cloud-config.js', './cloud-sync.js', './cloud-view.js', './vendor/supabase.js', './icon.svg', './icon-192.png', './icon-512.png', './manifest.webmanifest'];
 self.addEventListener('install', event => { event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(ASSETS)).then(() => self.skipWaiting())); });
 self.addEventListener('activate', event => { event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('forma-') && key !== CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim())); });
 self.addEventListener('fetch', event => {

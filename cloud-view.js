@@ -10,9 +10,9 @@ export function cloudView(state,mode='signin'){
     if(state.status==='cache-error'){
       content+=`<p class="muted small mb">Локальная копия аккаунта повреждена. Скачай исходный файл перед восстановлением из облака.</p><div class="cloud-choices">${button('raw-cache','Скачать исходную копию')}${button('reset-cache','Восстановить подключение')}</div>`;
     }else if(!state.linked){
-      content+=`<p class="muted small mb">На основном устройстве отправь свой дневник в облако. На втором — открой уже сохранённый. До выбора текущие записи остаются на месте.</p><div class="cloud-choices">${button('use-local','Отправить этот дневник','primary')}${button('use-remote','Открыть облачный дневник')}</div>`;
+      content+=`<p class="muted small mb">Тренировки и английский сохраняются вместе. На основном устройстве отправь свой дневник в облако. На втором — открой уже сохранённый. До выбора текущие записи остаются на месте.</p><div class="cloud-choices">${button('use-local','Отправить этот дневник','primary')}${button('use-remote','Открыть облачный дневник')}</div>`;
     }else{
-      content+=`<p class="muted small mb">Тренировки, подходы, программы, замеры, планы и настройки доступны на устройствах, где ты вошёл в этот аккаунт. Без сети изменения ждут отправки.</p>`;
+      content+=`<p class="muted small mb">Тренировки, подходы, программы, замеры, планы, английский и настройки доступны на устройствах, где ты вошёл в этот аккаунт. Без сети изменения ждут отправки.</p>`;
       if(state.status==='conflict')content+=`<div class="notice mb">Дневник менялся на другом устройстве или в соседней вкладке. Выбери версию перед продолжением синхронизации.<div class="mt">${button('conflict','Сравнить версии','primary')}</div></div>`;
       content+=`<div class="cloud-detail" data-cloud-detail>${state.syncedAt?'Последняя синхронизация: '+esc(new Date(state.syncedAt).toLocaleString('ru-RU')):'Первое сохранение ожидает связи.'}</div><div class="cloud-choices mt">${button('sync','Синхронизировать')}${button('backup','Копия до замены')}</div>`;
     }

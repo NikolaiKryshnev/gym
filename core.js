@@ -1,3 +1,4 @@
+import {createEnglishData,validateEnglishData} from './english-core.js?v=2.0.0';
 export const STORAGE_KEY = 'forma.training.v1';
 export const uid = () => globalThis.crypto?.randomUUID?.() || 'id-' + Date.now() + '-' + Math.random().toString(36).slice(2);
 export const dateKey = (date = new Date()) => { const d = new Date(date); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
@@ -18,6 +19,7 @@ export const EXERCISES = [
 export const programSetCount = program => program.exercises.reduce((sum,item)=>sum+item.sets+(item.warmupSets??2),0);
 export function migrateData(input){
   const result=structuredClone(input);
+  if(result.english===undefined)result.english=createEnglishData();
   if(result.programSetScheme!==1){
     for(const program of result.programs)for(const item of program.exercises){item.warmupSets=2;item.sets=3;}
     result.programSetScheme=1;
@@ -37,7 +39,7 @@ export const DEFAULT_PROGRAMS = [
   template('full','Всё тело','Все основные группы мышц','green',[['squat',3,8,50],['bench',3,10,50],['row',3,10,40],['ohp',3,10,12],['crunch',3,20,0]])
 ];
 export function createInitialData(demo = true, now = new Date()) {
-  const data = { version:1, programSetScheme:1, demo, settings:{name:'Атлет',weeklyGoal:3,rest:90,autoRest:true,sound:true,unit:'kg'},exercises:structuredClone(EXERCISES),programs:structuredClone(DEFAULT_PROGRAMS),sessions:[],measurements:[],schedule:{},goals:[{id:'goal-training',type:'sessions',name:'12 тренировок за месяц',target:12},{id:'goal-bench',type:'weight',name:'Жим лёжа · 80 кг',exerciseId:'bench',target:80}],active:null };
+  const data = { version:1, programSetScheme:1, demo, settings:{name:'Атлет',weeklyGoal:3,rest:90,autoRest:true,sound:true,unit:'kg'},exercises:structuredClone(EXERCISES),programs:structuredClone(DEFAULT_PROGRAMS),sessions:[],measurements:[],schedule:{},goals:[{id:'goal-training',type:'sessions',name:'12 тренировок за месяц',target:12},{id:'goal-bench',type:'weight',name:'Жим лёжа · 80 кг',exerciseId:'bench',target:80}],active:null,english:createEnglishData() };
   if (!demo) return data;
   const days = [27,25,23,20,18,16,13,11,9,6,4,2];
   days.forEach((ago,index) => {
@@ -105,6 +107,7 @@ export function validateData(input) {
   for(const m of input.measurements){if(!text(m.id,100)||!validDate(m.date)||!text(m.note,1000))fail();for(const field of ['weight','waist','chest','hip'])if(m[field]!==null&&!validateNumber(m[field],0,1000))fail();}
   for(const g of input.goals){if(!text(g.id,100)||!text(g.name,150)||!['sessions','weight'].includes(g.type)||!validateNumber(g.target,0.1,10000)||(g.type==='weight'&&!ids.has(g.exerciseId)))fail();}
   for(const [date,id] of Object.entries(input.schedule))if(!validDate(date)||!programIds.has(id))fail();
+  if(input.english!==undefined)validateEnglishData(input.english);
   return migrateData(input);
 }
 export function exportCSV(data) {

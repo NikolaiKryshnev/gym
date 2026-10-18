@@ -1,6 +1,6 @@
-import {cloudConfig} from './cloud-config.js?v=1.2.2';
+import {cloudConfig} from './cloud-config.js?v=2.0.0';
 import {JournalSync} from './cloud-sync.js';
-import {validateData} from './core.js';
+import {validateData} from './core.js?v=2.0.0';
 
 export function createCloud({getData,onData,onGuest,onStatus,blocked=()=>false}){
   let client=null,engine=null,user=null,debounce=null,initializing=true;
@@ -82,6 +82,7 @@ export function createCloud({getData,onData,onGuest,onStatus,blocked=()=>false})
     let other=engine?.conflict?.payload;
     if(engine?.conflict?.externalTab)try{other=JSON.parse(localStorage.getItem(engine.key)).payload;}catch{}
     return {externalTab:Boolean(engine?.conflict?.externalTab),localSessions:getData().sessions.length,localMeasurements:getData().measurements.length,
+      localEnglishSessions:getData().english.sessions.length,remoteEnglishSessions:other?.english?.sessions?.length||0,
       remoteSessions:other?.sessions?.length,remoteMeasurements:other?.measurements?.length};
   }
   const poll=setInterval(sync,30000);

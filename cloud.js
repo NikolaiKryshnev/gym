@@ -1,4 +1,4 @@
-import {cloudConfig} from './cloud-config.js';
+import {cloudConfig} from './cloud-config.js?v=1.2.1';
 import {JournalSync} from './cloud-sync.js';
 import {validateData} from './core.js';
 

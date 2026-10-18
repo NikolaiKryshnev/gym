@@ -1,2 +1,2 @@
-// Public browser credentials only. Never put a secret/service_role key here.
-export const cloudConfig = Object.freeze({url:'',publishableKey:''});
+// Public browser credentials. Access is protected by database RLS.
+export const cloudConfig = Object.freeze({"url":"https://juxcscswzhagetoygarn.supabase.co","publishableKey":"sb_publishable_GZAE9gPga83WG81fKTaMaw_SPuBQutG"});
